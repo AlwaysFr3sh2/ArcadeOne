@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    background: black;
+  }
+  canvas {
+    border: 1px solid white;
+  }
+  </style>
+</head>
+<body>
+<div style='text-align:center; justify-content: center;'>
+	<button onclick="runSnake()">Play Snake</button>
+	<button onclick="runTetris()">Play Tetris</button>
+	<button onclick="runBreakout()">Play Breakout</button>
+	<br>
+	<canvas width="0" height="0" id="game"></canvas>
+<div>
+<script>
+var SnakeRunning = false;
+var TetrisRunning = false;
+var BreakoutRunning = false;
+
+function runSnake() {
+if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
+SnakeRunning = true;
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+canvas.width = "400";
+canvas.height = "400";
+var grid = 16;
+var count = 0;
+  
+var snake = {
+  x: 160,
+  y: 160,
+  
+  // snake velocity. moves one grid length every frame in either the x or y direction
+  dx: grid,
+  dy: 0,
+  
+  // keep track of all grids the snake body occupies
+  cells: [],
+  
+  // length of the snake. grows when eating an apple
+  maxCells: 4
+};
+var apple = {
+  x: 320,
+  y: 320
+};
+// get random whole numbers in a specific range
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+// game loop
+function loop() {
+  requestAnimationFrame(loop);
+  // slow game loop to 15 fps instead of 60 (60/15 = 4)
+  if (++count < 4) {
+    return;
+  }
+  count = 0;
+  context.clearRect(0,0,canvas.width,canvas.height);
+  // move snake by it's velocity
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+  // wrap snake position horizontally on edge of screen
+  if (snake.x < 0) {
+    snake.x = canvas.width - grid;
+  }
+  else if (snake.x >= canvas.width) {
+    snake.x = 0;
+  }
+  
+  // wrap snake position vertically on edge of screen
+  if (snake.y < 0) {
+    snake.y = canvas.height - grid;
+  }
+  else if (snake.y >= canvas.height) {
+    snake.y = 0;
+  }
+  // keep track of where snake has been. front of the array is always the head
+  snake.cells.unshift({x: snake.x, y: snake.y});
+  // remove cells as we move away from them
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
+  }
+  // draw apple
+  context.fillStyle = 'red';
+  context.fillRect(apple.x, apple.y, grid-1, grid-1);
+  // draw snake one cell at a time
+  context.fillStyle = 'green';
+  snake.cells.forEach(function(cell, index) {
+    
+    // drawing 1 px smaller than the grid creates a grid effect in the snake body so you can see how long it is
+    context.fillRect(cell.x, cell.y, grid-1, grid-1);  
+    // snake ate apple
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+      // canvas is 400x400 which is 25x25 grids 
+      apple.x = getRandomInt(0, 25) * grid;
+      apple.y = getRandomInt(0, 25) * grid;
+    }
+    // check collision with all cells after this one (modified bubble sort)
+    for (var i = index + 1; i < snake.cells.length; i++) {
+      
+      // snake occupies same space as a body part. reset game
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+        document.location.reload();
+      }
+    }
+  });
+}
+// listen to keyboard events to move the snake
+document.addEventListener('keydown', function(e) {
+  // prevent snake from backtracking on itself by checking that it's 
+  // not already moving on the same axis (pressing left while moving
+  // left won't do anything, and pressing right while moving left
+  // shouldn't let you collide with your own body)
+  
+  // left arrow key
+  if (e.which === 37 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
+  // up arrow key
+  else if (e.which === 38 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  // right arrow key
+  else if (e.which === 39 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  }
+  // down arrow key
+  else if (e.which === 40 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+});
+// start the game
+requestAnimationFrame(loop);
+}
+}
+
+function runTetris(){
+if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
+TetrisRunning = true;
+var SQ      = 25;   // square side in pixels
+  var HCOUNT  = 10;   // horizontal width in squares
+  var VCOUNT  = 18;   // vertical width in squares
+  var WIDTH   = SQ * HCOUNT;
+  var HEIGHT  = SQ * VCOUNT;
+  var SPEED     = 250; // game speed in the loop.
+  var DROPSPEED = 80;  // game speed when dropping objects.
+  var ORIGSPEED = 250; // original game speed
+  var BGCOLOR = '#fff';
+  
+  var canvas = document.getElementById('game');
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+      
+  var ctx = canvas.getContext('2d');
+    
+  // Object definitions
+  // Cube, Left L, Right L, S shape, Z shape, T shape, Pipe (I)
+  // '0' is the normal orientation
+  // '1' is the object rotated 90 degrees clockwise
+  // '2' is the object rotated 180 degrees clockwise
+  // '3' is the object rotated 270 degrees clockwise
+  
+  var objects = [
+    {    // Cube
+      fill: '#01796F',
+      0: [[0,0], [1,1], [0,1], [1,0]], 1: [[0,0], [1,1], [0,1], [1,0]],
+      2: [[0,0], [1,1], [0,1], [1,0]], 3: [[0,0], [1,1], [0,1], [1,0]]
+    }, { // Normal L
+      fill: '#913247',
+      0: [[0,0],[1,0],[1,1],[1,2]], 1: [[0,1],[1,1],[2,1],[2,0]],
+      2: [[0,0],[0,1],[0,2],[1,2]], 3: [[0,0],[1,0],[2,0],[0,1]]
+    }, { // Reverse L
+      fill: '#7777bf',
+      0: [[0,0],[1,0],[0,1],[0,2]], 1: [[0,0],[1,0],[2,0],[2,1]],
+      2: [[1,0],[1,1],[1,2],[0,2]], 3: [[0,0],[0,1],[1,1],[2,1]]
+    }, { // S - shaped
+      fill: '#c2c272',
+      0: [[0,1],[1,1],[1,0],[2,0]], 1: [[0,0],[0,1],[1,1],[1,2]],
+      2: [[0,1],[1,1],[1,0],[2,0]], 3: [[0,0],[0,1],[1,1],[1,2]]
+    }, { // Z - shaped
+      fill: '#6eb5b5',
+      0: [[0,0],[1,0],[1,1],[2,1]], 1: [[1,0],[1,1],[0,1],[0,2]],
+      2: [[0,0],[1,0],[1,1],[2,1]], 3: [[1,0],[1,1],[0,1],[0,2]]
+    }, 
+	{ // T - shaped
+      fill: '#bf78bf',
+      0: [[0,0],[1,0],[2,0],[1,1]], 1: [[0,0],[0,1],[0,2],[1,1]],
+      2: [[0,2],[1,2],[2,2],[1,1]], 3: [[2,2],[2,0],[2,1],[1,1]]
+    }, { // Pipe
+      fill: '#6c6c6c',
+      0: [[0,0], [0,1], [0,2], [0,3]], 1: [[-1,1],[0,1],[1,1],[2,1]],
+      2: [[0,0], [0,1], [0,2], [0,3]], 3: [[-1,1],[0,1],[1,1],[2,1]]
+    }
+  ];
+  // current object
+  var object = null;
+  // object's orientation
+  var or = 2;
+  // last position of the object
+  var objectPos = [];
+  // horizontal position (offset) of the object
+  var hpos  = 4;
+  // vertical position (offset) of the object
+  var vpos  = 0;
+  // whether this is the first tick of a new object
+  var newOb = true;
+  // last tick's time
+  var t = new Date();
+  // If true the last object should be glued
+  var glue = false; 
+  // The Map, Grid, Matrix .. whatever
+  // Note: The map has 3 types of fields (squares). Empty fields have 
+  // value 1, fields that are occupied by the current moving object have value 2,
+  // and fields that are occupied by settled objects have a string value of the
+  // color in which they should be displayed (object's 'fill' property)
+  var Map = [];
+  
+  function resetGame(){
+    for( var i = 0; i < HCOUNT; i++ ){
+      Map[i] = [];
+      for( var j = 0; j < VCOUNT; j++ )
+        Map[i][j] = 1;
+    }
+    glue = false, newOb = true, vpos = or = 0, hpos  = 4;
+  }
+  resetGame();
+  
+  // The main game logic loop
+  function tick() {    
+    // Clears the map cells where the object used to be in the previous tick
+    var color = 1;
+    var removeLines = false;
+    if( glue ){
+      removeLines = true;
+      glue  = false;
+      newOb = true;
+      color = object.fill;
+      vpos  = 0;
+      hpos  = 4;
+      or    = 0;
+    }
+    for( var i=0; i < objectPos.length; i++ )
+      Map[ objectPos[i][0] ][ objectPos[i][1] ] = color;
+    objectPos = [];
+    
+    removeLines && removeFullLines();
+    
+    if( newOb ) {
+      // next random object to appear
+	  object =  objects[ Math.floor( Math.random() * objects.length ) ];
+      // compensates the vpos for the object's height
+      vpos -= Math.max( object[or][0][1], object[or][1][1], object[or][2][1], object[or][3][1] ) - 1;
+    }
+    
+    var x, y, olength = object[or].length;
+        
+    // Place the object on the map
+    // The object won't be out of horizontal bounds
+    for( i=0; i < olength; i++ ) {
+      x = hpos + object[or][i][0];
+      y = vpos + object[or][i][1];
+      
+      if( Map[ x ][ y ] ) {
+        Map[ x ][ y ] = 2;
+        objectPos.push( [ x, y ] );
+      }
+    }
+    
+    // Check the time difference from the last tick
+    // This dictates the game speed
+    var t1 = new Date();
+    if( t1 - t > SPEED ){ 
+      // if it's time for a new tick
+      var columns = {}
+      for( i=0; i < olength; i++ ) {
+        x = hpos + object[or][i][0];
+        y = vpos + object[or][i][1];
+        if( y<0 )
+          continue;
+        !isNaN(columns[x]) || (columns[x] = y);
+        columns[x] = Math.max( columns[x], y );
+      }
+      
+      for( i in columns )
+        if( columns[i] == VCOUNT - 1 || Map[i][columns[i] + 1] != 1 ){
+          glue = true;
+          if( newOb ) {
+            document.location.reload();
+          }
+          SPEED = ORIGSPEED;
+          return;
+        }
+      t = t1;
+      vpos += 1;
+    }
+    
+    newOb = false;
+  }
+  
+  // Scans the map for filled lines and removes them.
+  function removeFullLines(){
+    var line, j, i, k;
+    for( i = VCOUNT-1; i > 0; i-- ){
+      line = true;
+      for( j=0; j < HCOUNT; j++ )
+        if( typeof Map[j][i] != 'string' )
+          line = false;
+      
+      if( line ) {
+        for( k = i; k > 0; k-- )
+          for( j = 0; j < HCOUNT; j++ )
+            Map[j][k] = Map[j][k-1];
+        i++;
+      }
+    }
+	ORIGSPEED -= 3;
+	DROPSPEED -= 3;
+  }
+  
+  // Checks if the object can be moved to the side
+  function canMove( side ){
+    var maxFunc = side == 1 ? Math.max : Math.min;
+    var rows = {}, x, y;
+    for( var i=0, olength=object[or].length; i < olength; i++ ) {
+      y = vpos + object[or][i][1];
+      x = hpos + object[or][i][0] + side; // temporarily move the object sideways
+      !isNaN(rows[y]) || ( rows[y] = x );  // get the leftmost/rightmost square in each row
+      rows[y] = maxFunc( rows[y], x );
+    }
+    // Check if the leftmost/rightmost square is in an illegal position
+    for( i in rows )
+      if( rows[i] < 0 || rows[i] > HCOUNT-1 || Map[ rows[i] ][ i ] != 1 )
+        return false;
+    return true;
+  }
+  
+  // Checks if the element can be rotated.
+  function canRotate() {
+    var newOr = (or + 1) % 4;
+    var to = object[ newOr ], x, y;
+    for( var i=0, olength=to.length; i < olength; i++ ){
+      x = hpos + to[i][0];
+      y = vpos + to[i][1];
+      
+      // If we want to rotate an object at the edge, try 
+      // moving that object to the side to see if it can rotate.
+      if( !Map[x] ) {
+        var mod = x < 0 ? 1 : -1;
+        hpos += mod;
+        if( canRotate() ) return true;
+        else hpos -= mod;
+      }
+      
+      if( !Map[x][y] || typeof Map[x][y] === 'string' )
+        return false;
+    }
+        
+    return true;
+  }
+  
+  // draws a line from point (fromx, fromy) to point (tox, toy)
+  function line( fromx, fromy, tox, toy ){
+    ctx.beginPath();
+    ctx.moveTo( fromx, fromy );
+    ctx.lineTo( tox, toy );
+    ctx.stroke();
+  }
+  
+  // The grid line styles
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = .5;
+  function drawMap() {
+    // clear map and draw grid
+    ctx.clearRect( 0, 0, WIDTH, HEIGHT );
+    var currentSquare, w, h, i;
+    // this loop draws the current map state
+    for( w = 0; w < HCOUNT; w++ ){
+      ctx.save();
+      ctx.translate( w * SQ, 0 ); // Move the canvas horizontally
+      for( h = 0; h < VCOUNT; h++ ){
+        currentSquare = Map[w][h];
+        ctx.save();
+        ctx.translate( 0, h * SQ ); // Move the canvas vertically
+        if( currentSquare === 2) {
+          ctx.fillStyle = object.fill;
+          ctx.fillRect( 0, 0, SQ, SQ );
+        }
+        else if( typeof currentSquare === 'string' ) {
+          ctx.fillStyle = currentSquare;
+          ctx.fillRect( 0, 0, SQ, SQ );
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+    // draws the grid
+    for( i = 1; i < WIDTH; i++ )
+      line( i*SQ, 0, i*SQ, HEIGHT );
+    for( i = 1; i < HEIGHT; i++ )
+      line( 0, i*SQ, WIDTH, i*SQ );
+  }
+      
+	  drawLoop = setInterval(drawMap, 50);
+      tickLoop = setInterval(tick, 50);
+		
+  var running = true, drawLoop, tickLoop;
+  document.onkeydown = function(e) {
+    var key = e.which;
+    
+    if( running && key === 38 && canRotate() ) // up - rotate
+      or = ++or % 4; 
+    
+    else if( key === 40 ) { // down - drop the object by increasing game speed
+      SPEED = DROPSPEED;
+    }
+    
+    else if( key === 83 ) { // s - stop (pause)
+      if( running ){
+        clearInterval( drawLoop );
+        clearInterval( tickLoop );
+      }
+      else{
+        drawLoop = setInterval(drawMap, 50);
+        tickLoop = setInterval(tick, 50);
+      }
+      running = !running;
+    }
+    
+    else if( running && key === 37 && canMove(-1) ) // left - move left
+      hpos--;
+    else if( running && key === 39 && canMove(1) ) // right - move right
+      hpos++;
+  }
+  
+  document.onkeyup = function(e) { // cancel drop
+    if( e.which === 40 )
+      SPEED = ORIGSPEED;
+  }
+}
+}
+
+function runBreakout(){
+	if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
+	BreakoutRunning = true;
+	var canvas = document.getElementById("game");
+    var ctx = canvas.getContext("2d");
+	canvas.width = "600";
+	canvas.height = "800";
+    var ballR = 10, x = canvas.width / 2, y = canvas.height - 30,
+        dx = 3, dy = -3, pongH = 15, pongW = 100, pongX = (canvas.width - pongW) / 2,
+        rightKey = false, leftKey = false, brickRows = 5, brickCol = 9,
+        brickW = 75, brickH = 20, brickPadding = 10, brickOffsetTop = 30,
+        brickOffsetLeft = 20;
+    var bricks = [];
+    for (c = 0; c < brickCol; c++) {
+        for (r = 0; r < brickRows; r++) {
+            bricks.push({
+                x : (c * (brickW + brickPadding)) + brickOffsetLeft,
+                y : (r * (brickH + brickPadding)) + brickOffsetTop,
+                status : 1
+            });
+        }
+    }
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, ballR, 0, Math.PI * 2);
+        ctx.fillStyle = "#FFFFF7";
+        ctx.fill();
+        ctx.closePath();
+    }
+    function drawPong() {
+        ctx.beginPath();
+        ctx.rect(pongX, canvas.height - pongH, pongW, pongH);
+        ctx.fillStyle = "#eeeeee";
+        ctx.fill();
+        ctx.closePath();
+    }
+    function drawBricks() {
+        bricks.forEach(function(brick) {
+            if (!brick.status) return;
+            ctx.beginPath();
+            ctx.rect(brick.x, brick.y, brickW, brickH);
+            ctx.fillStyle = "#EB9532";
+            ctx.fill();
+            ctx.closePath();
+        });
+    }
+    function collisionDetection() {
+        bricks.forEach(function(b) {
+            if (!b.status) return;
+            var inBricksColumn = x > b.x  &&  x < b.x + brickW,
+                inBricksRow = y > b.y  &&  y < b.y + brickH;
+            if (inBricksColumn && inBricksRow) {
+                dy = -dy;
+                b.status = 0;
+            }
+        });
+    }
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBricks();
+        drawBall();
+        drawPong();
+        collisionDetection();
+        if (hitSideWall())
+            dx = -dx;
+        if (hitTop()  ||  hitPong())
+            dy = -dy;
+        if (gameOver())
+            document.location.reload();
+        var RIGHT_ARROW = 39, LEFT_ARROW = 37;
+        function hitPong() { return hitBottom() && ballOverPong(); }
+        function ballOverPong() { return x > pongX  &&  x < pongX + pongW; }
+        function hitBottom() { return y + dy > canvas.height - ballR; }
+        function gameOver() { return hitBottom() && !ballOverPong(); }
+        function hitSideWall() { return x + dx > canvas.width - ballR || x + dx < ballR; }
+        function hitTop() { return y + dy < ballR; }
+        function xOutOfBounds() { return x + dx > canvas.width - ballR ||  x + dx < ballR; }
+        function rightPressed(e) { return e.keyCode == RIGHT_ARROW; }
+        function leftPressed(e) { return e.keyCode == LEFT_ARROW; }
+        function keyDown(e) {
+            rightKey = rightPressed(e);
+            leftKey = leftPressed(e);
+        }
+        function keyUp(e) {
+            rightKey = rightPressed(e) ? false : rightKey;
+            leftKey = leftPressed(e) ? false : leftKey;
+        }
+        document.addEventListener("keydown", keyDown, false);
+        document.addEventListener("keyup", keyUp, false);
+        var maxX = canvas.width - pongW, minX = 0, pongDelta = rightKey ? 7 : leftKey ? -7 : 0;
+        pongX = pongX + pongDelta;
+        pongX = Math.min(pongX, maxX);
+        pongX = Math.max(pongX, minX);
+        x += dx;
+        y += dy;
+    }
+    setInterval(draw, 10);
+}
+}
+</script>
+</body>
+</html>
