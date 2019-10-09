@@ -24,11 +24,13 @@
 	<canvas width="0" height="0" id="game"></canvas>
 <div>
 <script>
-var GameRunning = false;
+var SnakeRunning = false;
+var TetrisRunning = false;
+var BreakoutRunning = false;
 
 function runSnake() {
-if(GameRunning == false) {
-GameRunning = true;
+if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
+SnakeRunning = true;
 var canvas = document.getElementById('game');
 var context = canvas.getContext('2d');
 canvas.width = "400";
@@ -151,8 +153,8 @@ requestAnimationFrame(loop);
 }
 
 function runTetris(){
-if(GameRunning == false) {
-GameRunning = true;
+if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
+TetrisRunning = true;
 var SQ      = 25;   // square side in pixels
   var HCOUNT  = 10;   // horizontal width in squares
   var VCOUNT  = 18;   // vertical width in squares
@@ -178,32 +180,32 @@ var SQ      = 25;   // square side in pixels
   
   var objects = [
     {    // Cube
-      fill: '#01796F',
+      fill: '#fcff69',
       0: [[0,0], [1,1], [0,1], [1,0]], 1: [[0,0], [1,1], [0,1], [1,0]],
       2: [[0,0], [1,1], [0,1], [1,0]], 3: [[0,0], [1,1], [0,1], [1,0]]
     }, { // Normal L
-      fill: '#913247',
+      fill: '#ffd761',
       0: [[0,0],[1,0],[1,1],[1,2]], 1: [[0,1],[1,1],[2,1],[2,0]],
       2: [[0,0],[0,1],[0,2],[1,2]], 3: [[0,0],[1,0],[2,0],[0,1]]
     }, { // Reverse L
-      fill: '#7777bf',
+      fill: '#617bff',
       0: [[0,0],[1,0],[0,1],[0,2]], 1: [[0,0],[1,0],[2,0],[2,1]],
       2: [[1,0],[1,1],[1,2],[0,2]], 3: [[0,0],[0,1],[1,1],[2,1]]
     }, { // S - shaped
-      fill: '#c2c272',
+      fill: '#6bff66',
       0: [[0,1],[1,1],[1,0],[2,0]], 1: [[0,0],[0,1],[1,1],[1,2]],
       2: [[0,1],[1,1],[1,0],[2,0]], 3: [[0,0],[0,1],[1,1],[1,2]]
     }, { // Z - shaped
-      fill: '#6eb5b5',
+      fill: '#ff5f4a',
       0: [[0,0],[1,0],[1,1],[2,1]], 1: [[1,0],[1,1],[0,1],[0,2]],
       2: [[0,0],[1,0],[1,1],[2,1]], 3: [[1,0],[1,1],[0,1],[0,2]]
     }, 
 	{ // T - shaped
-      fill: '#bf78bf',
-      0: [[0,0],[1,0],[2,0],[1,-1]], 1: [[2,0],[1,0],[1,1],[1,-1]],
-      2: [[0,0],[1,0],[2,0],[1,1]], 3: [[0,0],[1,0],[1,1],[1,-1]]
+      fill: '#c354ff',
+      0: [[0,0],[1,0],[2,0],[1,1]], 1: [[0,0],[0,1],[0,2],[1,1]],
+      2: [[0,2],[1,2],[2,2],[1,1]], 3: [[2,2],[2,0],[2,1],[1,1]]
     }, { // Pipe
-      fill: '#6c6c6c',
+      fill: '#6bf8ff',
       0: [[0,0], [0,1], [0,2], [0,3]], 1: [[-1,1],[0,1],[1,1],[2,1]],
       2: [[0,0], [0,1], [0,2], [0,3]], 3: [[-1,1],[0,1],[1,1],[2,1]]
     }
@@ -456,17 +458,17 @@ var SQ      = 25;   // square side in pixels
 }
 
 function runBreakout(){
-	if(GameRunning == false) {
-	GameRunning = true;
+	if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
+	BreakoutRunning = true;
 	var canvas = document.getElementById("game");
     var ctx = canvas.getContext("2d");
 	canvas.width = "600";
 	canvas.height = "800";
     var ballR = 10, x = canvas.width / 2, y = canvas.height - 30,
         dx = 3, dy = -3, pongH = 15, pongW = 100, pongX = (canvas.width - pongW) / 2,
-        rightKey = false, leftKey = false, brickRows = 7, brickCol = 9,
+        rightKey = false, leftKey = false, brickRows = 5, brickCol = 9,
         brickW = 75, brickH = 20, brickPadding = 10, brickOffsetTop = 30,
-        brickOffsetLeft = 8;
+        brickOffsetLeft = 20;
     var bricks = [];
     for (c = 0; c < brickCol; c++) {
         for (r = 0; r < brickRows; r++) {
@@ -517,8 +519,6 @@ function runBreakout(){
         drawBricks();
         drawBall();
         drawPong();
-		dx = dx *1.0001;
-		dy = dy *1.0001;
         collisionDetection();
         if (hitSideWall())
             dx = -dx;
