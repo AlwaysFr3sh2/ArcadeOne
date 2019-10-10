@@ -24,13 +24,11 @@
 	<canvas width="0" height="0" id="game"></canvas>
 <div>
 <script>
-var SnakeRunning = false;
-var TetrisRunning = false;
-var BreakoutRunning = false;
+var GameRunning = false;
 
 function runSnake() {
-if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
-SnakeRunning = true;
+if(GameRunning == false) {
+GameRunning = true;
 var canvas = document.getElementById('game');
 var context = canvas.getContext('2d');
 canvas.width = "400";
@@ -153,8 +151,8 @@ requestAnimationFrame(loop);
 }
 
 function runTetris(){
-if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
-TetrisRunning = true;
+if(GameRunning == false) {
+GameRunning = true;
 var SQ      = 25;   // square side in pixels
   var HCOUNT  = 10;   // horizontal width in squares
   var VCOUNT  = 18;   // vertical width in squares
@@ -202,8 +200,8 @@ var SQ      = 25;   // square side in pixels
     }, 
 	{ // T - shaped
       fill: '#c354ff',
-      0: [[0,0],[1,0],[2,0],[1,1]], 1: [[0,0],[0,1],[0,2],[1,1]],
-      2: [[0,2],[1,2],[2,2],[1,1]], 3: [[2,2],[2,0],[2,1],[1,1]]
+      0: [[0,0],[1,0],[2,0],[1,-1]], 1: [[2,0],[1,0],[1,1],[1,-1]],
+      2: [[0,0],[1,0],[2,0],[1,1]], 3: [[0,0],[1,0],[1,1],[1,-1]]
     }, { // Pipe
       fill: '#6bf8ff',
       0: [[0,0], [0,1], [0,2], [0,3]], 1: [[-1,1],[0,1],[1,1],[2,1]],
@@ -458,17 +456,18 @@ var SQ      = 25;   // square side in pixels
 }
 
 function runBreakout(){
-	if(SnakeRunning == false && TetrisRunning == false && BreakoutRunning == false) {
-	BreakoutRunning = true;
+	if(GameRunning == false) {
+	GameRunning = true;
 	var canvas = document.getElementById("game");
     var ctx = canvas.getContext("2d");
+	var coin;
 	canvas.width = "600";
 	canvas.height = "800";
     var ballR = 10, x = canvas.width / 2, y = canvas.height - 30,
-        dx = 3, dy = -3, pongH = 15, pongW = 100, pongX = (canvas.width - pongW) / 2,
-        rightKey = false, leftKey = false, brickRows = 5, brickCol = 9,
+        dx = 4, dy = -4, pongH = 15, pongW = 100, pongX = (canvas.width - pongW) / 2,
+        rightKey = false, leftKey = false, brickRows = 7, brickCol = 9,
         brickW = 75, brickH = 20, brickPadding = 10, brickOffsetTop = 30,
-        brickOffsetLeft = 20;
+        brickOffsetLeft = 8;
     var bricks = [];
     for (c = 0; c < brickCol; c++) {
         for (r = 0; r < brickRows; r++) {
@@ -510,6 +509,13 @@ function runBreakout(){
                 inBricksRow = y > b.y  &&  y < b.y + brickH;
             if (inBricksColumn && inBricksRow) {
                 dy = -dy;
+				coin = Math.floor(Math.random() * 2);
+				if (coin == 0) {
+					dy = dy*1.01;
+					}
+				if (coin == 1) {
+					dx = dx*1.01;
+					}
                 b.status = 0;
             }
         });
@@ -520,10 +526,26 @@ function runBreakout(){
         drawBall();
         drawPong();
         collisionDetection();
-        if (hitSideWall())
+        if (hitSideWall()) {
             dx = -dx;
-        if (hitTop()  ||  hitPong())
+			coin = Math.floor(Math.random() * 2);
+				if (coin == 0) {
+					dx = dx*1.01;
+					}
+				if (coin == 1) {
+					dy = dy*1.01;
+					}
+			}
+        if (hitTop()  ||  hitPong()) {
             dy = -dy;
+			coin = Math.floor(Math.random() * 2);
+				if (coin == 0) {
+					dy = dy*1.01;
+					}
+				if (coin == 1) {
+					dx = dx*1.01;
+					}
+					}
         if (gameOver())
             document.location.reload();
         var RIGHT_ARROW = 39, LEFT_ARROW = 37;
