@@ -1,154 +1,232 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title></title>
-  <style>
-  html, body {
-    height: 100%;
-    margin: 0;
-  }
-  body {
-    background: black;
-  }
-  canvas {
-    border: 1px solid white;
-  }
-  </style>
+  <title>Arcade One</title>
+  <link rel="stylesheet" type="text/css" href="arcadestyle.css">
 </head>
 <body>
+<div>
+    <p>Arcade One</p>
+</div>
 <div style='text-align:center; justify-content: center;'>
 	<button onclick="runSnake()">Play Snake</button>
 	<button onclick="runTetris()">Play Tetris</button>
 	<button onclick="runBreakout()">Play Breakout</button>
 	<br>
-	<canvas width="0" height="0" id="game"></canvas>
-<div>
+</div>
+<div id='box'>
+    <canvas width="100" height="100" id="game"></canvas>
+</div>
 <script>
 var GameRunning = false;
+var SnakeRunning = false;
+var TetrisRunning = false;
+var BreakoutRunning = false;
+//succ on my snake
 
-function runSnake() {
-if(GameRunning == false) {
-GameRunning = true;
-var canvas = document.getElementById('game');
-var context = canvas.getContext('2d');
-canvas.width = "400";
-canvas.height = "400";
-var grid = 16;
-var count = 0;
-  
-var snake = {
-  x: 160,
-  y: 160,
-  
-  // snake velocity. moves one grid length every frame in either the x or y direction
-  dx: grid,
-  dy: 0,
-  
-  // keep track of all grids the snake body occupies
-  cells: [],
-  
-  // length of the snake. grows when eating an apple
-  maxCells: 4
-};
-var apple = {
-  x: 320,
-  y: 320
-};
-// get random whole numbers in a specific range
+// the snake class will contain all the data we use to draw the snake.
+class Snake {
+    constructor() {
+        this.width = 15;
+        this.height = 15;
+        this.maxSpeed = 16;
+        this.xspeed = 0;
+        this.yspeed = 0
+        this.cellno = 4;
+        this.count = 1;
+        // the snake is initialized at this position, changing it after initialisation will do nothing
+        this.position = {
+            //x: 4 * 16,
+            //y: 1 * 16
+            x: 16,
+            y: 0
+        }
+        // each array point represents a cell, here we have 4, their positioning doesn't matter
+        this.cells = [
+          [this.position.x, this.position.y],
+          [this.position.x + 17, 0],
+          [this.position.x + 34, 0],
+          [this.position.x + 51, 0]
+        ];
+    }
+    // change the velocity of the snake
+    moveLeft() {
+      this.xspeed = -this.maxSpeed;
+      // we need to reset the other axis to prevent diagonal travel.
+      this.yspeed = 0;
+    }
+
+    moveRight() {
+      this.xspeed = this.maxSpeed;
+      this.yspeed = 0;
+    }
+
+    moveUp() {
+      this.yspeed = -this.maxSpeed;
+      this.xspeed = 0;
+    }
+    moveDown() {
+      this.yspeed = this.maxSpeed;
+      this.xspeed = 0
+    }
+    // draw each of the snakes cells
+    draw(ctx) {
+      for (var i = 0; i < this.cellno; i++) {
+        ctx.fillStyle = '#00f';
+        ctx.fillRect(this.cells[i][0], this.cells[i][1], this.width, this.height);
+      }
+    }
+    // updates the snake, delta time makes it smooth, it's not being used here though.
+    // delta time regulates fps on slower and fast computers.
+    update(deltatime) 
+      {
+        if (!deltatime) return;
+
+        for (var i = this.cellno - 1; i > 0; i--) {
+          this.cells[i][0] = this.cells[i - 1][0];
+          this.cells[i][1] = this.cells[i - 1][1];
+        }
+        this.cells[0][0] += this.xspeed;
+        this.cells[0][1] += this.yspeed;
+      }
+}
+// contains all of the data for the apple
+class Apple {
+  constructor() {
+    this.x = getRandomInt(0, 25) * 16; // we give the range as 25 then multiply
+    this.y = getRandomInt(0, 25) * 16; // so that the apple will be on the grid.
+    //this.x = 16;
+    //this.y = 0;
+
+    this.width = 15;
+    this.height = 15;
+
+    this.color = '#f00'
+  }
+  //draw the apple
+  draw(ctx) {
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+  // so we can give the apple a random color if we want later
+  changeColor(color) {
+    this.color = color;
+  }
+}
+//handles the players input, calls the snake to make changes
+class InputHandler {
+  constructor(snake) {
+    document.addEventListener('keydown', event => {
+      switch(event.keyCode) {
+        case 37: 
+          if (snake.xspeed == 0){ // if the player is already moving L/R they cannot move L/R again
+            snake.moveLeft();
+          }
+          break;
+        case 39:
+          if (snake.xspeed == 0) {
+            snake.moveRight();
+          }
+          break;
+        case 40:
+          if (snake.yspeed == 0) {
+            snake.moveDown();
+          }
+          break;
+        case 38:
+          if (snake.yspeed == 0) {
+            snake.moveUp();
+          }
+          break;
+      }
+    });
+  }
+
+}
+
+// get a random integer within the given range.
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
-// game loop
-function loop() {
-  requestAnimationFrame(loop);
-  // slow game loop to 15 fps instead of 60 (60/15 = 4)
-  if (++count < 4) {
-    return;
-  }
-  count = 0;
-  context.clearRect(0,0,canvas.width,canvas.height);
-  // move snake by it's velocity
-  snake.x += snake.dx;
-  snake.y += snake.dy;
-  // wrap snake position horizontally on edge of screen
-  if (snake.x < 0) {
-    snake.x = canvas.width - grid;
-  }
-  else if (snake.x >= canvas.width) {
-    snake.x = 0;
-  }
-  
-  // wrap snake position vertically on edge of screen
-  if (snake.y < 0) {
-    snake.y = canvas.height - grid;
-  }
-  else if (snake.y >= canvas.height) {
-    snake.y = 0;
-  }
-  // keep track of where snake has been. front of the array is always the head
-  snake.cells.unshift({x: snake.x, y: snake.y});
-  // remove cells as we move away from them
-  if (snake.cells.length > snake.maxCells) {
-    snake.cells.pop();
-  }
-  // draw apple
-  context.fillStyle = 'red';
-  context.fillRect(apple.x, apple.y, grid-1, grid-1);
-  // draw snake one cell at a time
-  context.fillStyle = 'green';
-  snake.cells.forEach(function(cell, index) {
-    
-    // drawing 1 px smaller than the grid creates a grid effect in the snake body so you can see how long it is
-    context.fillRect(cell.x, cell.y, grid-1, grid-1);  
-    // snake ate apple
-    if (cell.x === apple.x && cell.y === apple.y) {
-      snake.maxCells++;
-      // canvas is 400x400 which is 25x25 grids 
-      apple.x = getRandomInt(0, 25) * grid;
-      apple.y = getRandomInt(0, 25) * grid;
+
+// check if the snake has eaten the apple
+function checkApple(apple, snake) {
+		if (snake.cells[0][0] == apple.x && snake.cells[0][1] == apple.y) {
+      // add a new cell to the snake
+      snake.cells.push([[0],[0]]);
+      snake.cellno += 1;
+      apple.color == "0f0";
+      // give the apple a new location to simulate a new apple appearing
+      apple.x = getRandomInt(0,25) * 16;
+      apple.y = getRandomInt(0,25) * 16;
     }
-    // check collision with all cells after this one (modified bubble sort)
-    for (var i = index + 1; i < snake.cells.length; i++) {
-      
-      // snake occupies same space as a body part. reset game
-      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
-        document.location.reload();
+}
+// check if the snake has collided with itself
+function checkIfDead(snake,ctx) {
+  // if the player hits itself
+  for (var i = snake.cellno - 1; i > 0; i--) {
+    if (snake.cells[0][0] == snake.cells[i][0] && snake.cells[0][1] == snake.cells[i][1]){
+      window.location = 'youlose.html';
+    }  
+  }
+  // if the player hits the boundary
+  if (snake.cells[0][0] < -1 || snake.cells[0][0] > 600){
+    //you lose
+    window.location = 'youlose.html';
+  }
+  if (snake.cells[0][1] < -1 || snake.cells[0][1] > 400) {
+    window.location = 'youlose.html';
+  }
+}
+// the 'main' function for the snake game
+function runSnake() {
+    SnakeRunning = true;
+    var canvas = document.getElementById('game');
+    var ctx = canvas.getContext('2d');
+    canvas.width = "600";
+    canvas.height = "400";
+    var snake = new Snake();
+    var apple = new Apple();
+    // give the player a short delay before they lose
+    var delay = 100;
+
+    //loop and time stuff
+    new InputHandler(snake);
+
+    var lastTime = 0;
+    var count = 0;
+    function gameLoop(timestamp) {
+      requestAnimationFrame(gameLoop);
+      // slow the game down
+      if (++count < 4) {
+        return;
+      }
+      count = 0;
+      var deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
+      // refresh the screen
+      ctx.clearRect(0,0,600,600);
+
+
+      // draw and update the snake
+      snake.update(deltaTime);
+      snake.draw(ctx);
+      // draw the apple
+      apple.draw(ctx);
+      // run the check apple function
+      checkApple(apple, snake);
+      // run the delay if the delay is not over.
+      if (delay == 0) {
+        checkIfDead(snake, ctx);
+      }
+      else {
+        delay--;
       }
     }
-  });
+
+    gameLoop();
 }
-// listen to keyboard events to move the snake
-document.addEventListener('keydown', function(e) {
-  // prevent snake from backtracking on itself by checking that it's 
-  // not already moving on the same axis (pressing left while moving
-  // left won't do anything, and pressing right while moving left
-  // shouldn't let you collide with your own body)
-  
-  // left arrow key
-  if (e.which === 37 && snake.dx === 0) {
-    snake.dx = -grid;
-    snake.dy = 0;
-  }
-  // up arrow key
-  else if (e.which === 38 && snake.dy === 0) {
-    snake.dy = -grid;
-    snake.dx = 0;
-  }
-  // right arrow key
-  else if (e.which === 39 && snake.dx === 0) {
-    snake.dx = grid;
-    snake.dy = 0;
-  }
-  // down arrow key
-  else if (e.which === 40 && snake.dy === 0) {
-    snake.dy = grid;
-    snake.dx = 0;
-  }
-});
-// start the game
-requestAnimationFrame(loop);
-}
-}
+//succ on my snake
 
 function runTetris(){
 if(GameRunning == false) {
