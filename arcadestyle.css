@@ -40,7 +40,12 @@ margin: 10px;
 
 body {
 
-background-color: #7d7d7d;
+/*background-color: #7d7d7d;*/
+background-image: linear-gradient(#a1b0c7, #606975);
+background-repeat: no-repeat;
+height: 100%;
+margin: 0;
+background-attachment: fixed;
 font-family: "Verdana";
 }
 
