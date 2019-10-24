@@ -10,12 +10,13 @@ text-decoration: none;
 display: inline-block;
 font-size: 16px;
 margin: auto;
+box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
 }
 
 button:hover {
 background-color: white;
 color: #E3144F;
-box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+box-shadow: none;
 }
 
 div {
@@ -31,7 +32,7 @@ p {
 font-size: 2vw;
 color: #E3144F;
 box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
-background-color: #262526;
+background-color:#262526;
 text-align: center;
 display: inline-block;
 padding: 0.4em 0.9em 0.4em 0.9em;
